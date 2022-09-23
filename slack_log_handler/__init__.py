@@ -7,6 +7,16 @@ except ImportError:
     from urllib2 import urlopen, Request
 
 
+class SlackLogFormatter(logging.Formatter):
+    def __init__(self, *args, **kwargs):
+        super(SlackLogFormatter, self).__init__(*args, **kwargs)
+
+    def formatException(self, *args, **kwargs):
+        string = super(SlackLogFormatter, self).formatException(*args, **kwargs)
+
+        return f"```{string}```"
+
+
 class SlackLogHandler(logging.Handler):
     EMOJIS = {
         logging.NOTSET: ':loudspeaker:',
@@ -23,7 +33,7 @@ class SlackLogHandler(logging.Handler):
         channel=None,
         username=None,
         emojis=None,
-        format='[%(levelname)s] [%(asctime)s] [%(name)s] - %(message)s',
+        format='```%(asctime)s\n%(name)s\n%(levelname)s\n\n%(message)s```',
         date_format='%Y-%m-%d %H:%M:%S',
     ):
         logging.Handler.__init__(self)
@@ -31,7 +41,7 @@ class SlackLogHandler(logging.Handler):
         self.channel = channel
         self.username = username
         self.emojis = emojis if emojis is not None else SlackLogHandler.EMOJIS
-        self.formatter = logging.Formatter(fmt=format, datefmt=date_format)
+        self.formatter = SlackLogFormatter(fmt=format, datefmt=date_format)
 
     def _make_content(self, record):
         icon_emoji = getattr(record, 'slack_icon', self.emojis[record.levelno])
